@@ -71,3 +71,19 @@ FONT_SIZE_CHARACTER = 48
 FONT_SIZE_TITLE = 56
 FONT_SIZE_HUD = 26
 FONT_SIZE_SMALL = 20
+
+
+
+# ---------------------------------------------------------------
+# Menu and button settings (added in Milestone 5)
+# ---------------------------------------------------------------
+FONT_NAME = "segoeui,arial,helvetica"   # Pygame uses the first font it finds
+FONT_SIZE_BUTTON = 30
+
+COLOR_ACCENT = (124, 108, 255)          # purple-blue (button)
+COLOR_ACCENT_HOVER = (152, 138, 255)    # lighter when the mouse is over it
+COLOR_CARD_BORDER = (62, 68, 128)       # thin line around cards and dividers
+
+BUTTON_WIDTH = 260
+BUTTON_HEIGHT = 64
+BUTTON_RADIUS = 14                      # rounded corners
