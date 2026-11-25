@@ -1,11 +1,3 @@
-"""
-character_queue.py
-A Queue built by ourselves using a Linked List.
-Rule of a Queue: FIFO = First In, First Out.
-This file has NO Pygame code and does NOT use Python's built-in queue module.
-"""
-
-
 class Node:
     """One box in the chain. It holds one item and a link to the next box."""
 
@@ -33,7 +25,7 @@ class CharacterQueue:
         self._size += 1
 
     def dequeue(self):
-        """Remove and return the item at the FRONT. Returns None if empty."""
+        
         if self.front is None:
             return None                 # safe: nothing to remove
         removed_node = self.front
