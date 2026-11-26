@@ -76,3 +76,28 @@ class Spawner:
     def active_count(self):
         """How many characters are falling right now."""
         return len(self.active_characters)
+
+    def get_typable_characters(self):
+        """Return the characters the player is allowed to type right now:
+        the ones that have NOT crossed the Dead Bar.
+
+        The list is sorted (greatest y first), so every character that already
+        crossed the bar is at the FRONT. We skip those and return the rest.
+        The returned list is a new list; the active list is not changed."""
+        start = 0
+        while start < len(self.active_characters) and self.active_characters[start].has_crossed():
+            start += 1
+        return self.active_characters[start:]
+
+    def remove_character(self, character):
+        """Remove this EXACT Character object from the active list.
+        We compare with `is` (same object), not with ==, so if two characters
+        look the same, only the one we are given is removed.
+        Removing one item from a sorted list keeps the rest in the same order,
+        so the list stays sorted.
+        Returns True if the character was removed, False if it was not in the list."""
+        for index in range(len(self.active_characters)):
+            if self.active_characters[index] is character:
+                self.active_characters.pop(index)
+                return True
+        return False

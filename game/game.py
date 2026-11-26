@@ -11,6 +11,7 @@ from game.game_state import GameState
 from game.game_stats import GameStats
 from game.renderer import Renderer
 from game.spawner import Spawner
+from game.typing_handler import TypingHandler
 
 
 class Game:
@@ -23,6 +24,7 @@ class Game:
         self.state = GameState()        # which screen we are on
         self.stats = GameStats()        # created now, but its timer is NOT running yet
         self.spawner = None             # created when the game starts (see start_playing)
+        self.typing_handler = None      # created together with the spawner
         self.renderer = Renderer(self.screen)
 
     def run(self):
@@ -45,6 +47,10 @@ class Game:
                     self.state.quit()
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     self.start_playing()               # only does something in the menu
+                elif self.state.is_playing():
+                    # event.unicode is the typed text. It already includes Shift and
+                    # Caps Lock ("A" for Shift+a). It is "" for keys like Shift or Ctrl.
+                    self.typing_handler.handle_key(event.unicode)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:   # left click
                 if self.state.is_menu() and self.renderer.start_button_rect.collidepoint(event.pos):
@@ -56,10 +62,11 @@ class Game:
         so pressing ENTER again while playing does NOT create a new Spawner."""
         if self.state.start_game():
             self.spawner = Spawner()    # new Queue of 80 random characters
+            self.typing_handler = TypingHandler(self.spawner, self.stats)
 
     def update(self, dt):
         """Change the game data once per frame.
-        Later: typing input (Milestone 7), timer and Dead Bar (Milestone 8)."""
+        Typing is handled in handle_events. Later: timer and Dead Bar (Milestone 8)."""
         if self.state.is_playing():
             self.spawner.update(dt)     # move, spawn and sort the characters
 
