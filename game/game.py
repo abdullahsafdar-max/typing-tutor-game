@@ -10,6 +10,7 @@ import config
 from game.game_state import GameState
 from game.game_stats import GameStats
 from game.renderer import Renderer
+from game.spawner import Spawner
 
 
 class Game:
@@ -21,12 +22,14 @@ class Game:
 
         self.state = GameState()        # which screen we are on
         self.stats = GameStats()        # created now, but its timer is NOT running yet
+        self.spawner = None             # created when the game starts (see start_playing)
         self.renderer = Renderer(self.screen)
 
     def run(self):
         """The main loop. It repeats until the state says the game must stop."""
         while self.state.running:
             dt = self.clock.tick(config.FPS) / 1000   # seconds since the last frame
+            dt = min(dt, config.MAX_FRAME_TIME)        # never count a huge frame (window freeze)
             self.handle_events()
             self.update(dt)
             self.draw()
@@ -41,21 +44,34 @@ class Game:
                 if event.key == pygame.K_ESCAPE:       # ESC works in every state
                     self.state.quit()
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    self.state.start_game()            # only does something in the menu
+                    self.start_playing()               # only does something in the menu
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:   # left click
                 if self.state.is_menu() and self.renderer.start_button_rect.collidepoint(event.pos):
-                    self.state.start_game()
+                    self.start_playing()
+
+    def start_playing(self):
+        """Move from the menu to the Playing screen and prepare a fresh Spawner.
+        start_game() returns True only when the state really changed,
+        so pressing ENTER again while playing does NOT create a new Spawner."""
+        if self.state.start_game():
+            self.spawner = Spawner()    # new Queue of 80 random characters
 
     def update(self, dt):
-        """Nothing to update yet.
-        Later: spawner (Milestone 6), typing input (7), timer and Dead Bar (8)."""
-        pass
+        """Change the game data once per frame.
+        Later: typing input (Milestone 7), timer and Dead Bar (Milestone 8)."""
+        if self.state.is_playing():
+            self.spawner.update(dt)     # move, spawn and sort the characters
 
     def draw(self):
         if self.state.is_menu():
             self.renderer.draw_menu(pygame.mouse.get_pos())
         elif self.state.is_playing():
-            self.renderer.draw_playing(self.stats)
+            remaining = self.stats.get_remaining(self.spawner.queue_size(),
+                                                 self.spawner.active_count())
+            self.renderer.draw_playing(self.stats,
+                                       self.spawner.active_characters,   # already sorted
+                                       self.spawner.get_most_urgent(),
+                                       remaining)
         # The Game Over screen will be added in Milestone 8
         pygame.display.flip()                          # show the finished picture

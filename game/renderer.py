@@ -20,6 +20,16 @@ class Renderer:
         self.font_hud = pygame.font.SysFont(config.FONT_NAME, config.FONT_SIZE_HUD)
         self.font_hud_bold = pygame.font.SysFont(config.FONT_NAME, config.FONT_SIZE_HUD, bold=True)
         self.font_small = pygame.font.SysFont(config.FONT_NAME, config.FONT_SIZE_SMALL)
+        # Falling characters use a separate font where I, l, 1, O and 0 look different
+        self.font_character = pygame.font.SysFont(config.CHARACTER_FONT_NAME,
+                                                  config.FONT_SIZE_CHARACTER, bold=True)
+
+        # Color for each character category (Character.get_category gives the key)
+        self.category_colors = {
+            "lower": config.COLOR_LOWERCASE,
+            "upper": config.COLOR_UPPERCASE,
+            "digit": config.COLOR_DIGIT,
+        }
 
         # The big card in the middle of the menu
         self.card_rect = pygame.Rect(0, 0, 760, 520)
@@ -95,9 +105,11 @@ class Renderer:
                          label_surface.get_rect(midleft=(left + sample_surface.get_width() + gap, y)))
 
     # ------------------------------------------------------------
-    # PLAYING screen (temporary version for Milestone 5)
+    # PLAYING screen
     # ------------------------------------------------------------
-    def draw_playing(self, stats):
+    def draw_playing(self, stats, characters, most_urgent, remaining):
+        """stats = GameStats, characters = the SORTED active list,
+        most_urgent = the character to outline (or None), remaining = number to show."""
         self.screen.fill(config.COLOR_BACKGROUND)
 
         # Left: play area
@@ -111,11 +123,8 @@ class Renderer:
         self._draw_text("DEAD BAR", self.font_small, config.COLOR_DEAD_BAR,
                         topleft=(20, config.DEAD_BAR_Y + 14))
 
-        # Temporary message in the middle of the play area
-        middle_x = config.PLAY_AREA_WIDTH // 2
-        self._draw_text("Get ready!", self.font_title, config.COLOR_TEXT, center=(middle_x, 280))
-        self._draw_text("Falling characters will appear here in the next milestone.",
-                        self.font_hud, config.COLOR_TEXT_DIM, center=(middle_x, 345))
+        # Falling characters (drawn on top of the Dead Bar)
+        self._draw_characters(characters, most_urgent)
 
         # Right: stats panel
         panel_x = config.PLAY_AREA_WIDTH
@@ -128,10 +137,6 @@ class Renderer:
         right = panel_x + config.PANEL_WIDTH - 24
 
         self._draw_text("STATS", self.font_small, config.COLOR_TEXT_DIM, topleft=(left, 28))
-
-        # Remaining = characters in the Queue + characters falling.
-        # The Queue does not exist yet (Milestone 6), so we use the full 80 for now.
-        remaining = stats.get_remaining(config.TOTAL_CHARACTERS, 0)
 
         rows = [
             ("Time Left", self._format_time(stats.time_left)),
@@ -163,6 +168,27 @@ class Renderer:
         # Key hint
         self._draw_text("ESC  Exit", self.font_small, config.COLOR_TEXT_DIM,
                         bottomleft=(left, config.WINDOW_HEIGHT - 24))
+
+    def _draw_characters(self, characters, most_urgent):
+        """Draw every falling character. A character's y is the line where the
+        letter 'stands' (its baseline), so it touches the Dead Bar exactly when
+        Character.has_crossed() says it crossed."""
+        baseline_shift = -self.font_character.get_descent()   # space below the baseline
+
+        for character in characters:
+            color = self.category_colors[character.get_category()]
+            surface = self.font_character.render(character.symbol, True, color)
+            rect = surface.get_rect(midbottom=(int(character.x), int(character.y) + baseline_shift))
+
+            # Do not draw characters that are completely outside the window
+            if rect.bottom < 0 or rect.top > config.WINDOW_HEIGHT:
+                continue
+            self.screen.blit(surface, rect)
+
+            # A thin outline marks the most urgent character (closest to the Dead Bar)
+            if character is most_urgent:
+                pygame.draw.rect(self.screen, config.COLOR_ACCENT, rect.inflate(18, 4),
+                                 width=2, border_radius=10)
 
     @staticmethod
     def _format_time(seconds):

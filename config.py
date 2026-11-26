@@ -87,3 +87,15 @@ COLOR_CARD_BORDER = (62, 68, 128)       # thin line around cards and dividers
 BUTTON_WIDTH = 260
 BUTTON_HEIGHT = 64
 BUTTON_RADIUS = 14                      # rounded corners
+
+
+
+# ---------------------------------------------------------------
+# Falling characters and game loop (added in Milestone 6)
+# ---------------------------------------------------------------
+# A font where "I", "l", "1", "O" and "0" all look different (important for typing).
+CHARACTER_FONT_NAME = "consolas,couriernew,dejavusansmono,monospace"
+
+# The longest time one frame is allowed to count (in seconds).
+# This stops characters from jumping if the window freezes for a moment.
+MAX_FRAME_TIME = 0.05
