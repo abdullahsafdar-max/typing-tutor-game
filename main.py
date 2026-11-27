@@ -1,8 +1,3 @@
-"""
-main.py
-The starting point of the program. Run it with:  python main.py
-"""
-
 from game.game import Game
 
 

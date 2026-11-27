@@ -32,6 +32,30 @@ class GameState:
             return True
         return False
 
+    def end_game(self):
+        """Playing -> Game Over. In any other state it does nothing.
+        Returns True if the state really changed, otherwise False."""
+        if self.current == STATE_PLAYING:
+            self.current = STATE_GAME_OVER
+            return True
+        return False
+
+    def restart_game(self):
+        """Game Over -> Playing (Play Again). In any other state it does nothing.
+        Returns True if the state really changed, otherwise False."""
+        if self.current == STATE_GAME_OVER:
+            self.current = STATE_PLAYING
+            return True
+        return False
+
+    def go_to_menu(self):
+        """Game Over -> Menu. In any other state it does nothing.
+        Returns True if the state really changed, otherwise False."""
+        if self.current == STATE_GAME_OVER:
+            self.current = STATE_MENU
+            return True
+        return False
+
     def quit(self):
         """Ask the game to close. Works in every state."""
         self.running = False

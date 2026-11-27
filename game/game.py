@@ -1,7 +1,8 @@
 """
 game.py
 The "boss" of the game. It opens the window, runs the main loop,
-reads keyboard and mouse events, and connects GameState, GameStats and Renderer.
+reads keyboard and mouse events, and connects GameState, GameStats,
+Spawner, RoundManager and Renderer.
 """
 
 import pygame
@@ -10,6 +11,7 @@ import config
 from game.game_state import GameState
 from game.game_stats import GameStats
 from game.renderer import Renderer
+from game.round_manager import RoundManager
 from game.spawner import Spawner
 from game.typing_handler import TypingHandler
 
@@ -22,9 +24,11 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.state = GameState()        # which screen we are on
-        self.stats = GameStats()        # created now, but its timer is NOT running yet
-        self.spawner = None             # created when the game starts (see start_playing)
+        self.stats = GameStats()        # replaced by a fresh one in every new round
+        self.spawner = None             # created when a round starts (see start_new_round)
         self.typing_handler = None      # created together with the spawner
+        self.round_manager = None       # created together with the spawner
+        self.end_reason = None          # why the last round ended (shown on Game Over)
         self.renderer = Renderer(self.screen)
 
     def run(self):
@@ -46,33 +50,74 @@ class Game:
                 if event.key == pygame.K_ESCAPE:       # ESC works in every state
                     self.state.quit()
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    self.start_playing()               # only does something in the menu
+                    self.handle_enter()
+                elif self.state.is_game_over() and event.key == pygame.K_m:
+                    self.go_to_menu()                  # M = Main Menu (only on Game Over)
                 elif self.state.is_playing():
                     # event.unicode is the typed text. It already includes Shift and
                     # Caps Lock ("A" for Shift+a). It is "" for keys like Shift or Ctrl.
                     self.typing_handler.handle_key(event.unicode)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:   # left click
-                if self.state.is_menu() and self.renderer.start_button_rect.collidepoint(event.pos):
-                    self.start_playing()
+                self.handle_click(event.pos)
+
+    def handle_enter(self):
+        """ENTER starts a round from the menu, or starts a new one from Game Over.
+        While playing it does nothing."""
+        if self.state.is_menu():
+            self.start_playing()
+        elif self.state.is_game_over():
+            self.play_again()
+
+    def handle_click(self, position):
+        if self.state.is_menu():
+            if self.renderer.start_button_rect.collidepoint(position):
+                self.start_playing()
+        elif self.state.is_game_over():
+            if self.renderer.play_again_button_rect.collidepoint(position):
+                self.play_again()
+            elif self.renderer.menu_button_rect.collidepoint(position):
+                self.go_to_menu()
 
     def start_playing(self):
-        """Move from the menu to the Playing screen and prepare a fresh Spawner.
+        """Menu -> Playing, with a completely new round.
         start_game() returns True only when the state really changed,
-        so pressing ENTER again while playing does NOT create a new Spawner."""
+        so pressing ENTER again while playing does NOT start another round."""
         if self.state.start_game():
-            self.spawner = Spawner()    # new Queue of 80 random characters
-            self.typing_handler = TypingHandler(self.spawner, self.stats)
+            self.start_new_round()
+
+    def play_again(self):
+        """Game Over -> Playing, with a completely new round."""
+        if self.state.restart_game():
+            self.start_new_round()
+
+    def go_to_menu(self):
+        """Game Over -> Main Menu."""
+        self.state.go_to_menu()
+
+    def start_new_round(self):
+        """Create ALL game data again, so nothing is left from the last round:
+        new statistics (hits, misses, timer, event Stack), a new Queue of 80
+        random characters, an empty active list and a new typing handler."""
+        self.stats = GameStats()
+        self.spawner = Spawner()
+        self.typing_handler = TypingHandler(self.spawner, self.stats)
+        self.round_manager = RoundManager(self.spawner, self.stats)
+        self.end_reason = None
 
     def update(self, dt):
         """Change the game data once per frame.
-        Typing is handled in handle_events. Later: timer and Dead Bar (Milestone 8)."""
+        Typing is handled in handle_events."""
         if self.state.is_playing():
-            self.spawner.update(dt)     # move, spawn and sort the characters
+            self.round_manager.update(dt)               # timer, movement, misses
+            if self.round_manager.is_over():
+                self.end_reason = self.round_manager.end_reason()
+                self.state.end_game()                   # show the Game Over screen
 
     def draw(self):
+        mouse_position = pygame.mouse.get_pos()
         if self.state.is_menu():
-            self.renderer.draw_menu(pygame.mouse.get_pos())
+            self.renderer.draw_menu(mouse_position)
         elif self.state.is_playing():
             remaining = self.stats.get_remaining(self.spawner.queue_size(),
                                                  self.spawner.active_count())
@@ -80,5 +125,9 @@ class Game:
                                        self.spawner.active_characters,   # already sorted
                                        self.spawner.get_most_urgent(),
                                        remaining)
-        # The Game Over screen will be added in Milestone 8
+        elif self.state.is_game_over():
+            remaining = self.stats.get_remaining(self.spawner.queue_size(),
+                                                 self.spawner.active_count())
+            self.renderer.draw_game_over(self.stats, self.end_reason, remaining,
+                                         mouse_position)
         pygame.display.flip()                          # show the finished picture

@@ -1,12 +1,3 @@
-"""
-test_typing.py
-Tests for Milestone 7: typing input, Linear Search, hits and wrong keys.
-
-Most tests need no Pygame. The last group (TestGameKeyboard) sends fake
-keyboard events to the real Game class, using Pygame's hidden "dummy" display,
-so no window opens.
-"""
-
 import os
 import unittest
 
@@ -487,12 +478,16 @@ class TestGameKeyboard(unittest.TestCase):
         self.assertEqual(stats.get_remaining(self.game.spawner.queue_size(),
                                              self.game.spawner.active_count()), 79)
 
-    def test_timer_is_not_started(self):
+    def test_timer_counts_down_and_typing_does_not_change_it(self):
+        # Milestone 8: the timer now runs, so this test (which said the timer
+        # must NOT run) was updated. Typing still must not change the time.
         self.start_game()
         self.game.update(1.0)
+        time_before = self.game.stats.time_left
+        self.assertAlmostEqual(time_before, config.GAME_DURATION_SECONDS - 1.0)
         self.add_character("k", 200)
         self.press(pygame.K_k, "k")
-        self.assertEqual(self.game.stats.time_left, config.GAME_DURATION_SECONDS)
+        self.assertEqual(self.game.stats.time_left, time_before)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import math
 import pygame
 
 import config
+from game.round_manager import END_ALL_DONE
 
 
 class Renderer:
@@ -38,6 +39,12 @@ class Renderer:
         # The Start Game button. Game.py uses this rectangle to detect mouse clicks.
         self.start_button_rect = pygame.Rect(0, 0, config.BUTTON_WIDTH, config.BUTTON_HEIGHT)
         self.start_button_rect.center = (config.WINDOW_WIDTH // 2, 350)
+
+        # The two buttons on the Game Over screen (Game uses them to detect clicks)
+        self.play_again_button_rect = pygame.Rect(0, 0, config.BUTTON_WIDTH, config.BUTTON_HEIGHT)
+        self.play_again_button_rect.center = (config.WINDOW_WIDTH // 2 - 150, 545)
+        self.menu_button_rect = pygame.Rect(0, 0, config.BUTTON_WIDTH, config.BUTTON_HEIGHT)
+        self.menu_button_rect.center = (config.WINDOW_WIDTH // 2 + 150, 545)
 
     # ------------------------------------------------------------
     # Small helper
@@ -103,6 +110,66 @@ class Renderer:
         self.screen.blit(sample_surface, sample_surface.get_rect(midleft=(left, y)))
         self.screen.blit(label_surface,
                          label_surface.get_rect(midleft=(left + sample_surface.get_width() + gap, y)))
+
+    # ------------------------------------------------------------
+    # GAME OVER screen
+    # ------------------------------------------------------------
+    def draw_game_over(self, stats, end_reason, remaining, mouse_pos):
+        """stats = GameStats of the finished round, end_reason = END_TIME_UP or
+        END_ALL_DONE, remaining = characters that were never typed or counted."""
+        center_x = config.WINDOW_WIDTH // 2
+        self.screen.fill(config.COLOR_BACKGROUND)
+
+        # Card with a thin border (same style as the menu)
+        pygame.draw.rect(self.screen, config.COLOR_PLAY_AREA, self.card_rect, border_radius=24)
+        pygame.draw.rect(self.screen, config.COLOR_CARD_BORDER, self.card_rect, width=2, border_radius=24)
+
+        # Title and the reason why the round ended
+        self._draw_text("Game Over", self.font_title, config.COLOR_TEXT, center=(center_x, 165))
+        if end_reason == END_ALL_DONE:
+            reason_text = "You finished every character!"
+        else:
+            reason_text = "Time is up!"
+        self._draw_text(reason_text, self.font_hud, config.COLOR_TEXT_DIM, center=(center_x, 220))
+
+        pygame.draw.line(self.screen, config.COLOR_CARD_BORDER,
+                         (self.card_rect.left + 60, 255), (self.card_rect.right - 60, 255), 2)
+
+        # Final statistics
+        rows = [
+            ("Hits", str(stats.hits)),
+            ("Misses", str(stats.misses)),
+            ("Key Presses", str(stats.key_presses)),
+            ("Wrong Keys", str(stats.wrong_keys)),
+            ("Accuracy", f"{stats.get_accuracy():.1f}%"),
+            ("Left Over", str(remaining)),
+        ]
+        left = self.card_rect.left + 190
+        right = self.card_rect.right - 190
+        y = 292
+        for label, value in rows:
+            self._draw_text(label, self.font_hud, config.COLOR_TEXT_DIM, midleft=(left, y))
+            self._draw_text(value, self.font_hud_bold, config.COLOR_TEXT, midright=(right, y))
+            y += 38
+
+        # Buttons: Play Again (main action) and Main Menu (quieter)
+        self._draw_button(self.play_again_button_rect, "Play Again", mouse_pos,
+                          config.COLOR_ACCENT, config.COLOR_ACCENT_HOVER)
+        self._draw_button(self.menu_button_rect, "Main Menu", mouse_pos,
+                          config.COLOR_BUTTON_SECONDARY, config.COLOR_BUTTON_SECONDARY_HOVER)
+
+        # Key hints below the card
+        self._draw_text("ENTER  Play Again        M  Main Menu        ESC  Exit",
+                        self.font_small, config.COLOR_TEXT_DIM, center=(center_x, 650))
+
+    def _draw_button(self, rect, label, mouse_pos, color, hover_color):
+        """Draw a rounded button. It uses the lighter color when the mouse is over it."""
+        if rect.collidepoint(mouse_pos):
+            button_color = hover_color
+        else:
+            button_color = color
+        pygame.draw.rect(self.screen, button_color, rect, border_radius=config.BUTTON_RADIUS)
+        self._draw_text(label, self.font_button, config.COLOR_TEXT, center=rect.center)
 
     # ------------------------------------------------------------
     # PLAYING screen

@@ -101,3 +101,17 @@ class Spawner:
                 self.active_characters.pop(index)
                 return True
         return False
+
+    def remove_crossed_characters(self):
+        """Remove every character that has crossed the Dead Bar and return them
+        in a new list. The Game counts one MISS for each returned character.
+
+        The list is sorted (greatest y first), so the crossed characters are
+        all at the FRONT. We remove from the front until we meet a character
+        that has not crossed. A removed character is gone from the list, so it
+        can never be counted as a miss a second time.
+        Call this after update(), because update() does the sorting."""
+        crossed = []
+        while len(self.active_characters) > 0 and self.active_characters[0].has_crossed():
+            crossed.append(self.active_characters.pop(0))
+        return crossed
