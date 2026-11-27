@@ -78,3 +78,37 @@ MAX_FRAME_TIME = 0.05
 # Game Over screen
 COLOR_BUTTON_SECONDARY = (46, 51, 100)
 COLOR_BUTTON_SECONDARY_HOVER = (62, 68, 128)
+
+
+# ---------------------------------------------------------------
+# Milestone 9: gameplay UI polish
+# ---------------------------------------------------------------
+# Feedback colors
+COLOR_HIT = (90, 220, 120)            # green
+COLOR_MISS = COLOR_DEAD_BAR           # red (same red as the Dead Bar)
+COLOR_WRONG_KEY = (255, 175, 50)      # amber
+COLOR_DEAD_BAR_FLASH = (255, 130, 140)  # lighter red for the Dead Bar highlight
+
+# Urgency outline colors
+COLOR_URGENCY_NORMAL = COLOR_ACCENT           # purple
+COLOR_URGENCY_WARNING = (255, 150, 50)        # orange
+COLOR_URGENCY_DANGER = (235, 70, 80)          # red
+
+# Urgency distances: pixels between the character and the Dead Bar
+URGENCY_WARNING_DISTANCE = 150   # closer than this: orange
+URGENCY_DANGER_DISTANCE = 60     # closer than this: red
+
+# How long each effect lasts, in seconds
+EFFECT_HIT_FLASH_SECONDS = 0.15
+EFFECT_WRONG_FLASH_SECONDS = 0.25
+EFFECT_DEAD_BAR_FLASH_SECONDS = 0.40
+EFFECT_STAT_HIGHLIGHT_SECONDS = 0.35
+EFFECT_FLOAT_SECONDS = 0.70      # the floating +1
+EFFECT_FLOAT_RISE_PIXELS = 45    # how far the +1 moves up while it fades
+
+# Statistics panel
+TIME_WARNING_SECONDS = 10        # the timer turns red at this many seconds or less
+ACCURACY_GOOD_MIN = 90           # accuracy >= 90 is green
+ACCURACY_FAIR_MIN = 70           # accuracy >= 70 is amber, lower is red
+FONT_SIZE_TIMER = 52
+COLOR_BAR_TRACK = (46, 51, 100)  # the empty part of a progress bar

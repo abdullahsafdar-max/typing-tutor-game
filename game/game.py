@@ -8,12 +8,13 @@ Spawner, RoundManager and Renderer.
 import pygame
 
 import config
+from game.effects import Effects
 from game.game_state import GameState
 from game.game_stats import GameStats
 from game.renderer import Renderer
 from game.round_manager import RoundManager
 from game.spawner import Spawner
-from game.typing_handler import TypingHandler
+from game.typing_handler import RESULT_HIT, RESULT_WRONG_KEY, TypingHandler
 
 
 class Game:
@@ -29,6 +30,7 @@ class Game:
         self.typing_handler = None      # created together with the spawner
         self.round_manager = None       # created together with the spawner
         self.end_reason = None          # why the last round ended (shown on Game Over)
+        self.effects = Effects()        # flashes and the floating +1 (only for the eyes)
         self.renderer = Renderer(self.screen)
 
     def run(self):
@@ -56,10 +58,20 @@ class Game:
                 elif self.state.is_playing():
                     # event.unicode is the typed text. It already includes Shift and
                     # Caps Lock ("A" for Shift+a). It is "" for keys like Shift or Ctrl.
-                    self.typing_handler.handle_key(event.unicode)
+                    result = self.typing_handler.handle_key(event.unicode)
+                    self.show_typing_feedback(result, event.unicode)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:   # left click
                 self.handle_click(event.pos)
+
+    def show_typing_feedback(self, result, symbol):
+        """Start the effect that matches the result of handle_key().
+        This only changes the effects, never the hits or the key presses."""
+        if result == RESULT_HIT:
+            hit = self.typing_handler.last_hit_character    # the character that was removed
+            self.effects.trigger_hit(hit.x, hit.y)
+        elif result == RESULT_WRONG_KEY:
+            self.effects.trigger_wrong_key(symbol)
 
     def handle_enter(self):
         """ENTER starts a round from the menu, or starts a new one from Game Over.
@@ -94,6 +106,7 @@ class Game:
     def go_to_menu(self):
         """Game Over -> Main Menu."""
         self.state.go_to_menu()
+        self.effects.clear()
 
     def start_new_round(self):
         """Create ALL game data again, so nothing is left from the last round:
@@ -104,12 +117,17 @@ class Game:
         self.typing_handler = TypingHandler(self.spawner, self.stats)
         self.round_manager = RoundManager(self.spawner, self.stats)
         self.end_reason = None
+        self.effects.clear()
 
     def update(self, dt):
         """Change the game data once per frame.
         Typing is handled in handle_events."""
         if self.state.is_playing():
+            self.effects.update(dt)
+            misses_before = self.stats.misses
             self.round_manager.update(dt)               # timer, movement, misses
+            if self.stats.misses > misses_before:       # at least one new miss this frame
+                self.effects.trigger_miss()
             if self.round_manager.is_over():
                 self.end_reason = self.round_manager.end_reason()
                 self.state.end_game()                   # show the Game Over screen
@@ -124,7 +142,8 @@ class Game:
             self.renderer.draw_playing(self.stats,
                                        self.spawner.active_characters,   # already sorted
                                        self.spawner.get_most_urgent(),
-                                       remaining)
+                                       remaining,
+                                       self.effects)
         elif self.state.is_game_over():
             remaining = self.stats.get_remaining(self.spawner.queue_size(),
                                                  self.spawner.active_count())

@@ -22,6 +22,7 @@ class TypingHandler:
     def __init__(self, spawner, stats):
         self.spawner = spawner
         self.stats = stats
+        self.last_hit_character = None   # the Character removed by the last hit
 
     @staticmethod
     def is_typed_character(symbol):
@@ -37,7 +38,12 @@ class TypingHandler:
 
     def handle_key(self, symbol):
         """Process one typed key. `symbol` is the text of the key (event.unicode).
-        Returns RESULT_HIT, RESULT_WRONG_KEY or RESULT_IGNORED."""
+        Returns RESULT_HIT, RESULT_WRONG_KEY or RESULT_IGNORED.
+
+        last_hit_character is cleared at the start of every call, so it is
+        not None only right after a hit. The Game uses it to show the +1
+        at the position of the character that was just typed."""
+        self.last_hit_character = None
 
         # 1. Ignore keys that are not typed characters (Shift, Ctrl, Enter, Escape...)
         if not self.is_typed_character(symbol):
@@ -56,4 +62,5 @@ class TypingHandler:
         # 3b. Match: remove that exact character, then count the hit.
         self.spawner.remove_character(match)
         self.stats.record_hit(match.symbol)
+        self.last_hit_character = match
         return RESULT_HIT

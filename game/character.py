@@ -4,7 +4,13 @@ One falling character (a letter or a digit).
 This file has NO Pygame code. It only stores data and does simple math.
 """
 
-from config import CHARACTER_FALL_SPEED, DEAD_BAR_Y, SPAWN_Y
+from config import (CHARACTER_FALL_SPEED, DEAD_BAR_Y, SPAWN_Y,
+                    URGENCY_DANGER_DISTANCE, URGENCY_WARNING_DISTANCE)
+
+# The three urgency levels (the renderer picks the outline color from them)
+URGENCY_NORMAL = "normal"
+URGENCY_WARNING = "warning"
+URGENCY_DANGER = "danger"
 
 
 class Character:
@@ -21,6 +27,17 @@ class Character:
     def has_crossed(self, dead_bar_y=DEAD_BAR_Y):
         """True when the character has reached or passed the Dead Bar."""
         return self.y >= dead_bar_y
+
+    def get_urgency_level(self, dead_bar_y=DEAD_BAR_Y):
+        """How close is the character to the Dead Bar?
+        Returns 'danger' (very close), 'warning' (getting close) or 'normal'.
+        It only reads y. It never moves the character."""
+        distance = dead_bar_y - self.y
+        if distance <= URGENCY_DANGER_DISTANCE:
+            return URGENCY_DANGER
+        if distance <= URGENCY_WARNING_DISTANCE:
+            return URGENCY_WARNING
+        return URGENCY_NORMAL
 
     def get_category(self):
         """Return 'digit', 'upper' or 'lower'. The renderer uses this for color."""
